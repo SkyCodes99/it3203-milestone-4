@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Super Movie Database</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════
+     MUSTACHE TEMPLATES  (type="x-tmpl-mustache" = not executed)
+     ════════════════════════════════════════════════════════ -->
+
+<!-- Template: Grid Card -->
+<script id="tmpl-grid-card" type="x-tmpl-mustache">
+  <div class="movie-card grid-card" data-id="{{id}}" style="animation-delay:{{delay}}s">
+    {{#posterUrl}}
+      <img class="card-poster" src="{{posterUrl}}" alt="{{title}}" loading="lazy" />
+    {{/posterUrl}}
+    {{^posterUrl}}
+      <div class="card-poster-placeholder">🎬</div>
+    {{/posterUrl}}
+    <div class="card-info">
+      <p class="card-title">{{title}}</p>
+      <p class="card-year">{{year}}</p>
+      <p class="card-rating">{{#rating}}★ {{rating}}{{/rating}}</p>
+    </div>
+  </div>
+</script>
+
+<!-- Template: List Row -->
+<script id="tmpl-list-row" type="x-tmpl-mustache">
+  <div class="movie-card list-card" data-id="{{id}}" style="animation-delay:{{delay}}s">
+    {{#posterUrl}}
+      <img class="list-thumb" src="{{posterUrl}}" alt="{{title}}" loading="lazy" />
+    {{/posterUrl}}
+    {{^posterUrl}}
+      <div class="list-thumb list-thumb--placeholder">🎬</div>
+    {{/posterUrl}}
+    <div class="list-info">
+      <p class="list-title">{{title}}</p>
+      <div class="list-meta">
+        <span class="meta-pill">{{year}}</span>
+        {{#rating}}<span class="meta-pill rating-pill">★ {{rating}}</span>{{/rating}}
+        {{#lang}}<span class="meta-pill">{{lang}}</span>{{/lang}}
+      </div>
+      <p class="list-overview">{{shortOverview}}</p>
+    </div>
+    <div class="list-arrow">›</div>
+  </div>
+</script>
+
+<!-- Template: Detail Panel -->
+<script id="tmpl-detail" type="x-tmpl-mustache">
+  {{#backdropUrl}}
+    <img class="detail-backdrop" src="{{backdropUrl}}" alt="{{title}}" />
+  {{/backdropUrl}}
+  {{^backdropUrl}}
+    <div class="detail-backdrop-placeholder"></div>
+  {{/backdropUrl}}
+  <div class="detail-body">
+    <div class="detail-poster-row">
+      {{#posterUrl}}
+        <img class="detail-poster" src="{{posterUrl}}" alt="{{title}}" />
+      {{/posterUrl}}
+      {{^posterUrl}}
+        <div class="detail-poster-placeholder">🎬</div>
+      {{/posterUrl}}
+      <div class="detail-title-block">
+        <h2 class="detail-title">{{title}}</h2>
+        {{#tagline}}<p class="detail-tagline">{{tagline}}</p>{{/tagline}}
+      </div>
+    </div>
+
+    <div class="detail-meta">
+      <span class="meta-badge">{{year}}</span>
+      {{#rating}}<span class="meta-badge rating">★ {{rating}}</span>{{/rating}}
+      {{#runtime}}<span class="meta-badge">{{runtime}}</span>{{/runtime}}
+      {{#language}}<span class="meta-badge">{{language}}</span>{{/language}}
+      {{#genres}}
+        <span class="meta-badge genre">{{name}}</span>
+      {{/genres}}
+    </div>
+
+    {{#overview}}
+      <p class="detail-overview-label">Overview</p>
+      <p class="detail-overview">{{overview}}</p>
+    {{/overview}}
+
+    <div class="detail-extra">
+      <div class="extra-item"><label>Director</label><span>{{director}}</span></div>
+      <div class="extra-item"><label>Cast</label><span>{{cast}}</span></div>
+      <div class="extra-item"><label>Status</label><span>{{status}}</span></div>
+      <div class="extra-item"><label>Language</label><span>{{language}}</span></div>
+      <div class="extra-item"><label>Budget</label><span>{{budget}}</span></div>
+      <div class="extra-item"><label>Box Office</label><span>{{revenue}}</span></div>
+    </div>
+  </div>
+</script>
+
+<!-- Template: Pagination -->
+<script id="tmpl-pagination" type="x-tmpl-mustache">
+  <span id="page-info">Page {{current}} of {{total}} · {{count}} movies</span>
+  <div id="page-btns">
+    <button class="page-btn arrow" data-page="{{prev}}" {{#isFirst}}disabled{{/isFirst}}>‹</button>
+    {{#pages}}
+      <button class="page-btn {{#isCurrent}}current{{/isCurrent}}" data-page="{{num}}">{{num}}</button>
+    {{/pages}}
+    <button class="page-btn arrow" data-page="{{next}}" {{#isLast}}disabled{{/isLast}}>›</button>
+  </div>
+</script>
+
+<!-- Template: No Results -->
+<script id="tmpl-no-results" type="x-tmpl-mustache">
+  <div id="no-results-inner">
+    <span class="no-results-icon">◎</span>
+    <p>{{message}}</p>
+  </div>
+</script>
+
+<!-- ════════════════════════════════════════════════════════
+     HTML STRUCTURE
+     ════════════════════════════════════════════════════════ -->
+
+<!-- Header -->
+<header id="site-header">
+  <div class="header-inner">
+    <div class="logo" id="logo-btn">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">The Super Movie Database</span>
+    </div>
+
+    <!-- Primary Nav: Search vs Collection tabs -->
+    <nav class="main-nav" id="primary-nav">
+      <button class="nav-btn active" data-view="collection">Collections</button>
+      <button class="nav-btn" data-view="search">Search</button>
+    </nav>
+
+    <!-- Collection sub-nav (only visible in collection view) -->
+    <nav class="sub-nav" id="collection-nav">
+      <button class="subnav-btn active" data-category="popular">Popular</button>
+      <button class="subnav-btn" data-category="top_rated">Top Rated</button>
+      <button class="subnav-btn" data-category="upcoming">Upcoming</button>
+    </nav>
+
+    <!-- View toggle -->
+    <div class="view-toggle" id="view-toggle">
+      <button class="toggle-btn active" data-layout="grid" title="Grid view">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="0" y="0" width="7" height="7" rx="1"/><rect x="9" y="0" width="7" height="7" rx="1"/>
+          <rect x="0" y="9" width="7" height="7" rx="1"/><rect x="9" y="9" width="7" height="7" rx="1"/>
+        </svg>
+      </button>
+      <button class="toggle-btn" data-layout="list" title="List view">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="0" y="1" width="16" height="3" rx="1"/><rect x="0" y="6" width="16" height="3" rx="1"/>
+          <rect x="0" y="11" width="16" height="3" rx="1"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Search Bar (search view only) -->
+<section id="search-bar-section" class="hidden">
+  <div class="search-wrap">
+    <div class="search-field">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="search-input" placeholder="Search movies, directors, genres…" autocomplete="off" />
+      <button id="search-btn">SEARCH</button>
+    </div>
+  </div>
+</section>
+
+<!-- Main App -->
+<main id="app">
+  <div id="section-header">
+    <div class="section-header-inner">
+      <div>
+        <h1 id="section-title">Popular Movies</h1>
+        <p id="section-subtitle">Trending on the big screen right now</p>
+      </div>
+      <div id="result-count-badge" class="hidden"></div>
+    </div>
+  </div>
+
+  <div id="content-layout">
+    <!-- Results Panel -->
+    <div id="results-panel">
+      <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <p>Loading…</p>
+      </div>
+      <div id="no-results" class="hidden"></div>
+      <div id="movies-container"></div>
+      <div id="pagination" class="hidden"></div>
+    </div>
+
+    <!-- Detail Panel -->
+    <aside id="detail-panel" class="hidden">
+      <button id="close-detail" title="Close">✕</button>
+      <div id="detail-content"></div>
+    </aside>
+  </div>
+</main>
+
+<footer id="site-footer">
+  <p>Powered by <a href="https://www.themoviedb.org" target="_blank">TMDB API</a> · Built with jQuery &amp; Mustache.js · Milestone 4 · The Super Movie Database</p>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/4.2.0/mustache.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
